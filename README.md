@@ -157,7 +157,7 @@ curl -X POST https://<your-worker-domain>/admin/sync-commands \
 - `https://github.com/owner/repo`
 - `https://github.com/owner/repo.git`
 
-添加订阅时，bot 自动补发最近一条正式版 release（如果存在），后续每小时检查新版本。
+添加订阅时，bot 会在管理员私聊中静音补发最近一条正式版 release（如果存在），后续每小时检查新版本并静音推送到 Telegram 频道。
 
 示例：
 

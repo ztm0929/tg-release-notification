@@ -43,7 +43,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
       msg.chat.id,
       [
         "可用命令：",
-        "<code>/add owner/repo</code>  添加订阅（并补发最近1条正式版）",
+        "<code>/add owner/repo</code>  添加订阅（会在私聊补发最近1条正式版）",
         "<code>/remove owner/repo</code>  移除订阅",
         "<code>/list</code>  查看订阅列表",
       ].join("\n"),
@@ -74,14 +74,15 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
     if (added) {
       const latest = await getLatestEligibleRelease(env, fullName, { useEtag: false });
       if (latest) {
-        await notifyRelease(env, fullName, latest);
+        const title = latest.name?.trim() ? latest.name.trim() : latest.tag_name;
+        const published = latest.published_at ? new Date(latest.published_at).toISOString() : "";
+        const preview = buildReleaseMessage(fullName, title, latest.html_url, published, latest.body);
+
+        // 新增订阅时的补发：只发给管理员私聊（不发到频道），并尝试静音发送
+        await sendMessage(env, msg.chat.id, preview, "HTML", { silent: true });
+
+        // 仍然记录 lastNotifiedId，避免下一次 cron 立刻重复推送同一条
         await setLastNotifiedId(env, fullName, latest.id);
-        await sendMessage(
-          env,
-          msg.chat.id,
-          `已补发：<a href=\"${escapeHtml(latest.html_url)}\">${escapeHtml(latest.tag_name)}</a>`,
-          "HTML",
-        );
       } else {
         await sendMessage(
           env,
@@ -191,7 +192,7 @@ export async function notifyRelease(env: Env, fullName: string, r: GitHubRelease
   const published = r.published_at ? new Date(r.published_at).toISOString() : "";
 
   const text = buildReleaseMessage(fullName, title, r.html_url, published, r.body);
-  await sendMessage(env, env.TELEGRAM_CHANNEL_ID, text, "HTML");
+  await sendMessage(env, env.TELEGRAM_CHANNEL_ID, text, "HTML", { silent: true });
 }
 
 export async function sendMessage(
@@ -199,12 +200,14 @@ export async function sendMessage(
   chatId: string | number,
   text: string,
   parseMode: "HTML" | "MarkdownV2" | undefined = undefined,
+  opts: { silent?: boolean } = {},
 ): Promise<void> {
   const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
   const payload: Record<string, unknown> = {
     chat_id: chatId,
     text,
     disable_web_page_preview: true,
+    disable_notification: Boolean(opts.silent),
   };
   if (parseMode) payload.parse_mode = parseMode;
 
