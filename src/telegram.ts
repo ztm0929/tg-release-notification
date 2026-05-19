@@ -1,4 +1,4 @@
-import type { Env, TelegramUpdate, TelegramMessage } from "./types";
+import type { Env, TelegramUpdate, TelegramMessage, GitHubRelease } from "./types";
 import { getSubs, addSubscription, removeSubscription, clearStateFor, getLastNotifiedId, setLastNotifiedId } from "./kv";
 import { getLatestEligibleRelease } from "./github";
 import { escapeHtml, normalizeRepoArg } from "./utils";
@@ -113,19 +113,84 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
   await sendMessage(env, msg.chat.id, "未知命令，发送 /help 查看用法。", "HTML");
 }
 
-export async function notifyRelease(env: Env, fullName: string, r: { tag_name: string; name: string | null; html_url: string; published_at: string | null }): Promise<void> {
-  const title = r.name?.trim() ? r.name.trim() : r.tag_name;
-  const published = r.published_at ? new Date(r.published_at).toISOString() : "";
+const TELEGRAM_TEXT_LIMIT = 4096;
 
-  const text = [
-    `<b>${escapeHtml(fullName)}</b>`,
-    `<b>${escapeHtml(title)}</b>`,
-    `<a href=\"${escapeHtml(r.html_url)}\">${escapeHtml(r.html_url)}</a>`,
-    published ? `<code>${escapeHtml(published)}</code>` : "",
+function cleanReleaseBody(body: string): string {
+  const normalized = body.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = normalized
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      let s = l;
+      // 轻量 Markdown 清洗：尽量让内容可读，不追求完整渲染
+      s = s.replace(/^#{1,6}\s+/, "");
+      s = s.replace(/^[-*+]\s+/, "");
+      s = s.replace(/^\d+\.\s+/, "");
+      s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+      s = s.replace(/`([^`]+)`/g, "$1");
+      s = s.replace(/\*\*([^*]+)\*\*/g, "$1");
+      s = s.replace(/__([^_]+)__/g, "$1");
+      return s.trim();
+    })
+    .filter(Boolean);
+
+  return lines.join("\n");
+}
+
+function buildReleaseMessage(fullName: string, title: string, url: string, publishedIso: string, body: string | null): string {
+  const header = [`<b>${escapeHtml(fullName)}</b>`, `<b>${escapeHtml(title)}</b>`].join("\n");
+  const footer = [
+    `<a href=\"${escapeHtml(url)}\">${escapeHtml(url)}</a>`,
+    publishedIso ? `<code>${escapeHtml(publishedIso)}</code>` : "",
   ]
     .filter(Boolean)
     .join("\n");
 
+  const cleaned = body?.trim() ? cleanReleaseBody(body) : "";
+  if (!cleaned) return [header, footer].filter(Boolean).join("\n");
+
+  const MAX_LINES = 15;
+  let lines = cleaned.split("\n").filter(Boolean);
+  const originalLineCount = lines.length;
+  const wasLongByLines = originalLineCount > MAX_LINES;
+  if (wasLongByLines) lines = lines.slice(0, MAX_LINES);
+
+  let excerpt = lines.join("\n");
+  const MAX_CHARS = 1200;
+  const wasLongByChars = excerpt.length > MAX_CHARS;
+  if (wasLongByChars) excerpt = excerpt.slice(0, MAX_CHARS).trimEnd();
+
+  const truncated = wasLongByLines || wasLongByChars || cleaned.length > excerpt.length;
+  if (truncated) excerpt = `${excerpt}\n…`;
+
+  const quote = truncated
+    ? `<blockquote expandable>${escapeHtml(excerpt)}</blockquote>`
+    : `<blockquote>${escapeHtml(excerpt)}</blockquote>`;
+
+  // 先生成一次，如超限再逐步收缩 excerpt
+  let text = [header, quote, footer].filter(Boolean).join("\n");
+  if (text.length <= TELEGRAM_TEXT_LIMIT) return text;
+
+  // 超过 Telegram 限制：继续截断引用区
+  let shrink = excerpt;
+  while (text.length > TELEGRAM_TEXT_LIMIT && shrink.length > 100) {
+    shrink = shrink.slice(0, Math.max(100, shrink.length - 200)).trimEnd();
+    const q = `<blockquote expandable>${escapeHtml(`${shrink}\n…`)}</blockquote>`;
+    text = [header, q, footer].filter(Boolean).join("\n");
+  }
+
+  // 兜底：仍超限则去掉 body
+  if (text.length > TELEGRAM_TEXT_LIMIT) return [header, footer].filter(Boolean).join("\n");
+  return text;
+}
+
+export async function notifyRelease(env: Env, fullName: string, r: GitHubRelease): Promise<void> {
+  const title = r.name?.trim() ? r.name.trim() : r.tag_name;
+  const published = r.published_at ? new Date(r.published_at).toISOString() : "";
+
+  const text = buildReleaseMessage(fullName, title, r.html_url, published, r.body);
   await sendMessage(env, env.TELEGRAM_CHANNEL_ID, text, "HTML");
 }
 

@@ -39,4 +39,5 @@ export type GitHubRelease = {
   draft: boolean;
   prerelease: boolean;
   published_at: string | null;
+  body: string | null;
 };
