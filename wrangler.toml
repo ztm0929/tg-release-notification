@@ -1,0 +1,25 @@
+name = "tg-release-notification"
+main = "src/index.ts"
+compatibility_date = "2026-05-19"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[[kv_namespaces]]
+binding = "KV"
+id = "bfc4d20cb2714f50b7320fb422f123b7"
+preview_id = "bfc4d20cb2714f50b7320fb422f123b7"
+
+[vars]
+# Telegram channel to post notifications to
+TELEGRAM_CHANNEL_ID = "-1001774738011"
+# Only this Telegram user id can manage subscriptions via bot commands
+ADMIN_USER_ID = "1635378227"
+# Title keywords to exclude (case-insensitive)
+KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release"
+GITHUB_API_BASE = "https://api.github.com"
+
+# Secrets to set via `wrangler secret put`:
+# - TELEGRAM_BOT_TOKEN
+# - GITHUB_TOKEN
+# - (optional) TELEGRAM_WEBHOOK_SECRET

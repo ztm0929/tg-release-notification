@@ -1,0 +1,22 @@
+{
+  "name": "tg-release-notification",
+  "version": "1.0.0",
+  "description": "GitHub Release notification bot for Telegram (ztm0929 only)",
+  "packageManager": "pnpm@latest",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260519.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.93.0"
+  }
+}

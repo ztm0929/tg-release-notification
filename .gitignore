@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+pnpm-debug.log
+
+# Build output
+dist/
+build/
+*.js
+*.js.map
+*.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets and local config
+.env
+.env.local
+.wrangler/
+wrangler.toml.local
+
+# Logs
+*.log
+
+# Session state
+.copilot/
+
+# pnpm workspace
+pnpm-workspace.yaml
