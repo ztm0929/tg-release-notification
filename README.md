@@ -8,7 +8,7 @@
 
 - Serverless 部署：Cloudflare Workers + Cron 定时触发
 - 自动推送：每小时检查一次订阅项目的新 release，推送到 Telegram 频道
-- 智能过滤：只推送正式版，自动过滤 alpha/beta/rc/pre-release 等预发版
+- 智能过滤：只推送正式版，自动过滤 alpha/beta/rc/pre-release/canary 等预发版
 - 动态订阅：通过 Telegram bot 命令管理订阅列表，无需修改代码
 - 去重机制：用 KV 存储已通知的 release ID，避免重复推送
 - 高效缓存：利用 GitHub ETag 减少 API 请求
@@ -69,7 +69,7 @@ ADMIN_USER_ID = "YOUR_USER_ID"
 
 # 其他配置（通常无需改动）
 TELEGRAM_CHANNEL_ID = "-1001774738011"
-KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release"
+KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release,canary"
 GITHUB_API_BASE = "https://api.github.com"
 ```
 
@@ -179,7 +179,7 @@ curl -X POST https://<your-worker-domain>/admin/sync-commands \
 2. Cloudflare Cron（每小时）
    - 遍历所有订阅
    - 调用 GitHub API 拉取 releases
-   - 过滤：draft=false、prerelease=false、标题不包含 alpha/beta/rc/pre-release
+   - 过滤：draft=false、prerelease=false、标题不包含 alpha/beta/rc/pre-release/canary
    - 检查 KV 去重：是否已推送过该 release
    - 若为新 release，推送到 Telegram 频道并更新状态
 

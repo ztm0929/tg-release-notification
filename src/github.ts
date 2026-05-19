@@ -7,7 +7,7 @@ export async function getLatestEligibleRelease(
   opts: { useEtag: boolean; keywords?: string[] },
 ): Promise<GitHubRelease | null> {
   const keywords = opts.keywords ?? getBlocklist(env);
-  const url = `${(env.GITHUB_API_BASE || "https://api.github.com").replace(/\/+$/g, "")}/repos/${fullName}/releases?per_page=10`;
+  const url = `${(env.GITHUB_API_BASE || "https://api.github.com").replace(/\/+$/g, "")}/repos/${fullName}/releases?per_page=30`;
 
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",

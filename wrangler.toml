@@ -16,7 +16,7 @@ TELEGRAM_CHANNEL_ID = "-1001774738011"
 # Only this Telegram user id can manage subscriptions via bot commands
 ADMIN_USER_ID = "1635378227"
 # Title keywords to exclude (case-insensitive)
-KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release"
+KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release,canary"
 GITHUB_API_BASE = "https://api.github.com"
 
 # Secrets to set via `wrangler secret put`:
