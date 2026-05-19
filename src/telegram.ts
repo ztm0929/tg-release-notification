@@ -147,7 +147,7 @@ function buildReleaseMessage(fullName: string, title: string, url: string, publi
     ? new Date(publishedIso).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
     : "";
 
-  const footer = published ? `\n发布时间：${published}` : "";
+  const footer = published ? `\n\n发布时间：${published}` : "";
 
   const cleaned = body?.trim() ? cleanReleaseBody(body) : "";
   if (!cleaned) return [header, footer].filter(Boolean).join("");
@@ -171,7 +171,7 @@ function buildReleaseMessage(fullName: string, title: string, url: string, publi
     : `<blockquote>${escapeHtml(excerpt)}</blockquote>`;
 
   // 先生成一次，如超限再逐步收缩 excerpt
-  let text = [header, `\n${quote}`, footer].filter(Boolean).join("");
+  let text = [header, `\n\n${quote}`, footer].filter(Boolean).join("");
   if (text.length <= TELEGRAM_TEXT_LIMIT) return text;
 
   // 超过 Telegram 限制：继续截断引用区
@@ -179,7 +179,7 @@ function buildReleaseMessage(fullName: string, title: string, url: string, publi
   while (text.length > TELEGRAM_TEXT_LIMIT && shrink.length > 100) {
     shrink = shrink.slice(0, Math.max(100, shrink.length - 200)).trimEnd();
     const q = `<blockquote expandable>${escapeHtml(`${shrink}\n…`)}</blockquote>`;
-    text = [header, `\n${q}`, footer].filter(Boolean).join("");
+    text = [header, `\n\n${q}`, footer].filter(Boolean).join("");
   }
 
   // 兜底：仍超限则去掉 body
