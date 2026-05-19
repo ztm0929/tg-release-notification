@@ -141,13 +141,13 @@ function cleanReleaseBody(body: string): string {
 }
 
 function buildReleaseMessage(fullName: string, title: string, url: string, publishedIso: string, body: string | null): string {
-  const header = [`<b>${escapeHtml(fullName)}</b>`, `<b>${escapeHtml(title)}</b>`].join("\n");
-  const footer = [
-    `<a href=\"${escapeHtml(url)}\">${escapeHtml(url)}</a>`,
-    publishedIso ? `<code>${escapeHtml(publishedIso)}</code>` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const header = `${escapeHtml(fullName)} 发布了新版本\n<a href=\"${escapeHtml(url)}\">${escapeHtml(title)}</a>`;
+
+  const published = publishedIso
+    ? new Date(publishedIso).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    : "";
+
+  const footer = published ? `发布时间：${published}` : "";
 
   const cleaned = body?.trim() ? cleanReleaseBody(body) : "";
   if (!cleaned) return [header, footer].filter(Boolean).join("\n");
