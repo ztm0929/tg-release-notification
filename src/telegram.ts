@@ -141,16 +141,16 @@ function cleanReleaseBody(body: string): string {
 }
 
 function buildReleaseMessage(fullName: string, title: string, url: string, publishedIso: string, body: string | null): string {
-  const header = `${escapeHtml(fullName)} 发布了新版本\n<a href=\"${escapeHtml(url)}\">${escapeHtml(title)}</a>`;
+  const header = `<b>${escapeHtml(fullName)} 发布了新版本</b>\n<a href=\"${escapeHtml(url)}\">${escapeHtml(title)}</a>`;
 
   const published = publishedIso
     ? new Date(publishedIso).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
     : "";
 
-  const footer = published ? `发布时间：${published}` : "";
+  const footer = published ? `\n发布时间：${published}` : "";
 
   const cleaned = body?.trim() ? cleanReleaseBody(body) : "";
-  if (!cleaned) return [header, footer].filter(Boolean).join("\n");
+  if (!cleaned) return [header, footer].filter(Boolean).join("");
 
   const MAX_LINES = 15;
   let lines = cleaned.split("\n").filter(Boolean);
@@ -171,7 +171,7 @@ function buildReleaseMessage(fullName: string, title: string, url: string, publi
     : `<blockquote>${escapeHtml(excerpt)}</blockquote>`;
 
   // 先生成一次，如超限再逐步收缩 excerpt
-  let text = [header, quote, footer].filter(Boolean).join("\n");
+  let text = [header, `\n${quote}`, footer].filter(Boolean).join("");
   if (text.length <= TELEGRAM_TEXT_LIMIT) return text;
 
   // 超过 Telegram 限制：继续截断引用区
@@ -179,11 +179,11 @@ function buildReleaseMessage(fullName: string, title: string, url: string, publi
   while (text.length > TELEGRAM_TEXT_LIMIT && shrink.length > 100) {
     shrink = shrink.slice(0, Math.max(100, shrink.length - 200)).trimEnd();
     const q = `<blockquote expandable>${escapeHtml(`${shrink}\n…`)}</blockquote>`;
-    text = [header, q, footer].filter(Boolean).join("\n");
+    text = [header, `\n${q}`, footer].filter(Boolean).join("");
   }
 
   // 兜底：仍超限则去掉 body
-  if (text.length > TELEGRAM_TEXT_LIMIT) return [header, footer].filter(Boolean).join("\n");
+  if (text.length > TELEGRAM_TEXT_LIMIT) return [header, footer].filter(Boolean).join("");
   return text;
 }
 
@@ -206,8 +206,10 @@ export async function sendMessage(
   const payload: Record<string, unknown> = {
     chat_id: chatId,
     text,
-    disable_web_page_preview: true,
     disable_notification: Boolean(opts.silent),
+    link_preview_options: {
+      is_disabled: false,
+    },
   };
   if (parseMode) payload.parse_mode = parseMode;
 
