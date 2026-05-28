@@ -19,6 +19,12 @@ ADMIN_USER_ID = "1635378227"
 KEYWORD_BLOCKLIST = "alpha,beta,rc,pre-release,canary"
 GITHUB_API_BASE = "https://api.github.com"
 
+# Added from local .env (non-sensitive)
+DEEPSEEK_API_URL = "https://api.deepseek.com"
+MEDIAWIKI_API_BASE = "https://ac-wiki.cn/api.php"
+MEDIAWIKI_USER = "天明"
+MEDIAWIKI_BOT_USERNAME = "天明@telegram"
+
 # Secrets to set via `wrangler secret put`:
 # - TELEGRAM_BOT_TOKEN
 # - GITHUB_TOKEN

@@ -2,6 +2,7 @@ import type { Env, TelegramUpdate, TelegramMessage, GitHubRelease } from "./type
 import { getSubs, addSubscription, removeSubscription, clearStateFor, getLastNotifiedId, setLastNotifiedId } from "./kv";
 import { getLatestEligibleRelease } from "./github";
 import { escapeHtml, normalizeRepoArg } from "./utils";
+import { pageExists, generateWikiArticle, createWikiPage } from "./wiki";
 
 export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Promise<void> {
   const msg = update.message;
@@ -108,6 +109,45 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
       await clearStateFor(env, fullName);
     }
     await sendMessage(env, msg.chat.id, removed ? "已移除订阅。" : "订阅不存在。", "HTML");
+    return;
+  }
+
+  if (cmd === "/wiki") {
+    const title = arg.trim();
+    if (!title) {
+      await sendMessage(env, msg.chat.id, "用法：<code>/wiki 词条名</code>", "HTML");
+      return;
+    }
+
+    await sendMessage(env, msg.chat.id, `正在查询 MediaWiki 中是否存在《${escapeHtml(title)}》…`, "HTML");
+
+    try {
+      const { exists, url } = await pageExists(env, title);
+      if (exists) {
+        await sendMessage(env, msg.chat.id, `页面已存在：<a href=\"${escapeHtml(url || "")}\">${escapeHtml(title)}</a>`, "HTML");
+        return;
+      }
+
+      const generated = await generateWikiArticle(env, title);
+      if (!generated) {
+        await sendMessage(env, msg.chat.id, "未能生成词条：请检查 DeepSeek 配置或稍后重试。", "HTML");
+        return;
+      }
+
+      await sendMessage(env, msg.chat.id, "未找到页面，已生成草稿，正在尝试创建新页面…", "HTML");
+      const r = await createWikiPage(env, title, generated);
+      if (r.ok) {
+        const link = `<a href=\"${escapeHtml(r.url || "")}\">${escapeHtml(title)}</a>`;
+        // 发送链接并附上创建的正文内容（已由 DeepSeek 生成）
+        const full = `已创建页面：${link}\n\n${escapeHtml(generated)}`;
+        await sendMessage(env, msg.chat.id, full, "HTML");
+      } else {
+        await sendMessage(env, msg.chat.id, `创建页面失败：${escapeHtml(r.error || "未知错误")}` , "HTML");
+      }
+    } catch (e) {
+      await sendMessage(env, msg.chat.id, `操作失败：${escapeHtml(String(e))}`, "HTML");
+    }
+
     return;
   }
 

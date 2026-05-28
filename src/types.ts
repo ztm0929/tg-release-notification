@@ -10,6 +10,14 @@ export interface Env {
   GITHUB_TOKEN: string;
   GITHUB_API_BASE?: string;
   KEYWORD_BLOCKLIST?: string;
+  // MediaWiki and DeepSeek integration
+  MEDIAWIKI_API_BASE?: string; // must be the full api.php endpoint (e.g. https://ac-wiki.cn/api.php)
+  MEDIAWIKI_BOT_USERNAME?: string;
+  MEDIAWIKI_BOT_PASSWORD?: string;
+  MEDIAWIKI_USER?: string;
+
+  DEEPSEEK_API_URL?: string; // e.g. https://api.deepseek.com
+  DEEPSEEK_KEY?: string;
 }
 
 export type TelegramUpdate = {

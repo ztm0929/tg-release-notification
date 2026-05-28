@@ -23,7 +23,15 @@ export default {
         return new Response("bad request", { status: 400 });
       }
 
-      ctx.waitUntil(handleTelegramUpdate(update, env));
+      // Run handler and surface errors to logs for debugging
+      ctx.waitUntil((async () => {
+        try {
+          await handleTelegramUpdate(update, env);
+        } catch (e) {
+          console.error('handleTelegramUpdate failed', e);
+          throw e;
+        }
+      })());
       return new Response("ok");
     }
 
